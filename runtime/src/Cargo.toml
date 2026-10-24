@@ -7,6 +7,7 @@ license = "MIT"
 
 [lib]
 name = "hsharp_wasm_runtime"
+path = "lib.rs"
 crate-type = ["staticlib"]
 
 # Świadomie ZERO zależności — im mniej ruchomych części w crate'cie
