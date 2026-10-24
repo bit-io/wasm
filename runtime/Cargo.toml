@@ -14,7 +14,6 @@ crate-type = ["staticlib"]
 # stojącym między H# a przeglądarką, tym mniejsze ryzyko, że aktualizacja
 # jakiejś zależności kiedyś po cichu zmieni ABI. To jest dokładnie ten
 # sam powód, dla którego biblioteka H#-owa też nie ma żadnych zależności
-# w [deps] swojego bytes.hk.
 [dependencies]
 
 [profile.release]
