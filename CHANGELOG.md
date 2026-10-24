@@ -29,3 +29,11 @@ opisane w `docs/API.md`.
   `docs/API.md` nie został zweryfikowany uruchomieniowo w tym środowisku
   (brak toolchainu LLVM 21 + H# w sandboxie, w którym ta biblioteka
   powstała) — zweryfikuj przed produkcją zgodnie z instrukcją tamże.
+
+## Unreleased
+
+- `runtime/src/Cargo.toml`: added `path = "lib.rs"` to `[lib]`. The manifest lives in `runtime/src/`
+  next to `lib.rs`, but cargo looks for `<manifest dir>/src/lib.rs` by default, so
+  `cargo build --manifest-path runtime/src/Cargo.toml` failed with
+  "can't find library `hsharp_wasm_runtime`, rename file to `src/lib.rs` or specify lib.path"
+  and `bit` kept the package as source only (the playground then could not link the runtime).
