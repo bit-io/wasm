@@ -14,9 +14,9 @@
 
 [build]
 -> link => static
--> native => cargo build --release --lib --manifest-path runtime/src/Cargo.toml --target wasm32-unknown-unknown
--> native-lib-path => runtime/src/target/wasm32-unknown-unknown/release
--> native-skip-if => runtime/src/target/wasm32-unknown-unknown/release/libhsharp_wasm_runtime.a
+-> native => cargo build --release --lib --manifest-path runtime/Cargo.toml --target wasm32-unknown-unknown
+-> native-lib-path => runtime/target/wasm32-unknown-unknown/release
+-> native-skip-if => runtime/target/wasm32-unknown-unknown/release/libhsharp_wasm_runtime.a
 
 [lib]
 -> output => hlib
