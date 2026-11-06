@@ -1,0 +1,47 @@
+use "bit -> wasm" from "wasm"
+use "std -> conv" from "conv"
+
+;; Runs ONCE, right after the page has loaded the module.
+fn main() is
+    wasm::web_console::log("H# -> wasm: main() started")
+
+    let root: wasm::web_dom::Element = wasm::web_dom::body()
+    root.set_html("")
+
+    let heading: wasm::web_dom::Element = wasm::web_dom::create("h1")
+    heading.set_text("Hello from H#! 🎉")
+    root.append(heading)
+
+    let label: wasm::web_dom::Element = wasm::web_dom::create("p")
+    label.set_attr("id", "counter-label")
+    label.set_attr("data-count", "0")
+    label.set_text("Clicked: 0 times")
+    root.append(label)
+
+    let button: wasm::web_dom::Element = wasm::web_dom::create("button")
+    button.set_attr("id", "counter-button")
+    button.set_text("Click me")
+    root.append(button)
+
+    ;; the id `listen` returns is the `id` that arrives later in wasm_on_event(KIND_DOM_EVENT, id, ...)
+    ;; — this is the first listener registered, so its id is 0
+    wasm::web_events::listen(button, "click")
+    wasm::web_timers::set_interval(3000)
+end
+
+;; The ONE entry point for every asynchronous event (DOM events, timers, fetch).
+pub fn wasm_on_event(kind: int, id: int, num: f64, text: string) is
+    if kind == wasm::web_events::KIND_DOM_EVENT is
+        if id == 0 is
+            let label: wasm::web_dom::Element = wasm::web_dom::by_id("counter-label")
+            let current: int = conv::str_to_int(label.attr("data-count"))
+            let next: int = current + 1
+            label.set_attr("data-count", to_string(next))
+            label.set_text("Clicked: " + to_string(next) + " times")
+        end
+    end
+
+    if kind == wasm::web_events::KIND_INTERVAL is
+        wasm::web_console::log("tick every 3 s, random id: " + wasm::web_random::uuid_v4())
+    end
+end
