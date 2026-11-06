@@ -1,4 +1,4 @@
-use "web-wasm -> web_dom" from "dom"
+mod web_dom
 
 ;; Rodzaje zdarzeń dostarczanych do `wasm_on_event`. Jeden, stabilny punkt
 ;; wejścia zamiast osobnych callbacków dla każdego API (timery, fetch,
@@ -24,7 +24,7 @@ end
 ;; pojawi się jako `id` w `wasm_on_event(KIND_DOM_EVENT, listener_id, ...)`.
 ;;
 ;; Zwraca -1, jeśli `el` nie jest prawidłowym elementem.
-pub fn listen(el: dom::Element, event_type: string) -> int is
+pub fn listen(el: web_dom::Element, event_type: string) -> int is
     if !el.is_valid() is
         return -1
     end
