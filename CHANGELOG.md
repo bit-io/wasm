@@ -3,6 +3,26 @@
 Format: [Keep a Changelog](https://keepachangelog.com/), wersjonowanie
 opisane w `docs/API.md`.
 
+## [0.2.0] — wasm przez emcc
+
+### BREAKING
+- Cel `wasm32` kompilatora H# buduje teraz przez `emcc` (Emscripten): `h# compile --target wasm`
+  daje `app.js` + `app.wasm`. Stara ścieżka (`--emit object` + `cargo` + `wasm-ld`) nie istnieje.
+- Usunięte: `runtime/` (Rust: `core_runtime.rs`, `web_bridge.rs`) i `glue/hsharp-web-loader.js` —
+  runtime H# kompiluje sam emcc, a stronę JS dostarcza `emscripten/hsharp-web.js`.
+- Importy: `use "bit -> wasm" from "wasm"`, potem `wasm::web_dom::...` (poprzednie
+  `use "web-wasm -> ..."` nie było poprawną składnią H#).
+
+### Dodano
+- `emscripten/web_bridge.cpp` (generowany) i `emscripten/hsharp-web.js` (emcc `--js-library`).
+- `scripts/gen-emscripten-bridge.py` — generator mostu z deklaracji `fn hweb_*`.
+- `src/lib.h#` wylicza moduły (wcześniej był pusty), wersja w `wasm::VERSION`.
+
+### Naprawiono
+- Kontrakt ABI: `bool` to `int8_t` (nie `i64`), `int` to `int64_t` — potwierdzone na kodzie
+  wygenerowanym przez kompilator.
+- Przykład `hello-page` przepisany pod nową ścieżkę (`Bit.hk` zamiast `Bytes.hk`).
+
 ## [0.1.0] — pierwsze wydanie
 
 ### Dodano
@@ -29,11 +49,3 @@ opisane w `docs/API.md`.
   `docs/API.md` nie został zweryfikowany uruchomieniowo w tym środowisku
   (brak toolchainu LLVM 21 + H# w sandboxie, w którym ta biblioteka
   powstała) — zweryfikuj przed produkcją zgodnie z instrukcją tamże.
-
-## Unreleased
-
-- `runtime/src/Cargo.toml`: added `path = "lib.rs"` to `[lib]`. The manifest lives in `runtime/src/`
-  next to `lib.rs`, but cargo looks for `<manifest dir>/src/lib.rs` by default, so
-  `cargo build --manifest-path runtime/src/Cargo.toml` failed with
-  "can't find library `hsharp_wasm_runtime`, rename file to `src/lib.rs` or specify lib.path"
-  and `bit` kept the package as source only (the playground then could not link the runtime).
