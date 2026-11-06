@@ -1,4 +1,4 @@
-use "web-wasm -> web_dom" from "dom"
+mod web_dom
 
 extern static [rust] is
     fn hweb_canvas_set_size(handle: int, width: int, height: int) -> bool
@@ -20,70 +20,70 @@ extern static [rust] is
     fn hweb_canvas_fill_text(handle: int, text: string, x: f64, y: f64) -> bool
 end
 
-pub fn set_size(canvas: dom::Element, width: int, height: int) -> bool is
+pub fn set_size(canvas: web_dom::Element, width: int, height: int) -> bool is
     return hweb_canvas_set_size(canvas.handle, width, height)
 end
 
-pub fn clear(canvas: dom::Element) -> bool is
+pub fn clear(canvas: web_dom::Element) -> bool is
     return hweb_canvas_clear(canvas.handle)
 end
 
-pub fn fill_style(canvas: dom::Element, css_color: string) -> bool is
+pub fn fill_style(canvas: web_dom::Element, css_color: string) -> bool is
     return hweb_canvas_fill_style(canvas.handle, css_color)
 end
 
-pub fn stroke_style(canvas: dom::Element, css_color: string) -> bool is
+pub fn stroke_style(canvas: web_dom::Element, css_color: string) -> bool is
     return hweb_canvas_stroke_style(canvas.handle, css_color)
 end
 
-pub fn line_width(canvas: dom::Element, width: f64) -> bool is
+pub fn line_width(canvas: web_dom::Element, width: f64) -> bool is
     return hweb_canvas_line_width(canvas.handle, width)
 end
 
-pub fn fill_rect(canvas: dom::Element, x: f64, y: f64, w: f64, h: f64) -> bool is
+pub fn fill_rect(canvas: web_dom::Element, x: f64, y: f64, w: f64, h: f64) -> bool is
     return hweb_canvas_fill_rect(canvas.handle, x, y, w, h)
 end
 
-pub fn stroke_rect(canvas: dom::Element, x: f64, y: f64, w: f64, h: f64) -> bool is
+pub fn stroke_rect(canvas: web_dom::Element, x: f64, y: f64, w: f64, h: f64) -> bool is
     return hweb_canvas_stroke_rect(canvas.handle, x, y, w, h)
 end
 
-pub fn clear_rect(canvas: dom::Element, x: f64, y: f64, w: f64, h: f64) -> bool is
+pub fn clear_rect(canvas: web_dom::Element, x: f64, y: f64, w: f64, h: f64) -> bool is
     return hweb_canvas_clear_rect(canvas.handle, x, y, w, h)
 end
 
-pub fn begin_path(canvas: dom::Element) -> bool is
+pub fn begin_path(canvas: web_dom::Element) -> bool is
     return hweb_canvas_begin_path(canvas.handle)
 end
 
-pub fn move_to(canvas: dom::Element, x: f64, y: f64) -> bool is
+pub fn move_to(canvas: web_dom::Element, x: f64, y: f64) -> bool is
     return hweb_canvas_move_to(canvas.handle, x, y)
 end
 
-pub fn line_to(canvas: dom::Element, x: f64, y: f64) -> bool is
+pub fn line_to(canvas: web_dom::Element, x: f64, y: f64) -> bool is
     return hweb_canvas_line_to(canvas.handle, x, y)
 end
 
-pub fn arc(canvas: dom::Element, x: f64, y: f64, radius: f64, start_rad: f64, end_rad: f64) -> bool is
+pub fn arc(canvas: web_dom::Element, x: f64, y: f64, radius: f64, start_rad: f64, end_rad: f64) -> bool is
     return hweb_canvas_arc(canvas.handle, x, y, radius, start_rad, end_rad)
 end
 
-pub fn close_path(canvas: dom::Element) -> bool is
+pub fn close_path(canvas: web_dom::Element) -> bool is
     return hweb_canvas_close_path(canvas.handle)
 end
 
-pub fn fill(canvas: dom::Element) -> bool is
+pub fn fill(canvas: web_dom::Element) -> bool is
     return hweb_canvas_fill(canvas.handle)
 end
 
-pub fn stroke(canvas: dom::Element) -> bool is
+pub fn stroke(canvas: web_dom::Element) -> bool is
     return hweb_canvas_stroke(canvas.handle)
 end
 
-pub fn font(canvas: dom::Element, css_font: string) -> bool is
+pub fn font(canvas: web_dom::Element, css_font: string) -> bool is
     return hweb_canvas_font(canvas.handle, css_font)
 end
 
-pub fn fill_text(canvas: dom::Element, text: string, x: f64, y: f64) -> bool is
+pub fn fill_text(canvas: web_dom::Element, text: string, x: f64, y: f64) -> bool is
     return hweb_canvas_fill_text(canvas.handle, text, x, y)
 end
