@@ -1,7 +1,7 @@
 [package]
 -> name        => wasm
--> version     => 0.1.0
--> description => Web/WASM library for H# — browser bindings (console, DOM, events, timers, storage, fetch, canvas) over a tiny Rust runtime (extern static [rust]), compiled for wasm32.
+-> version     => 0.2.0
+-> description => Web/WASM library for H# — browser bindings (console, DOM, events, timers, storage, fetch, canvas) for the wasm32 target, built by emcc.
 -> authors     => ["Bit Developers"]
 -> license     => MIT
 -> lang        => h#
@@ -10,20 +10,19 @@
 -> edition => 2026
 
 [layout]
--> src => src
+-> src       => src
+-> lib-entry => src/lib.h#
 
 [build]
--> link => static
--> native => cargo build --release --lib --manifest-path runtime/Cargo.toml --target wasm32-unknown-unknown
--> native-lib-path => runtime/target/wasm32-unknown-unknown/release
--> native-skip-if => runtime/target/wasm32-unknown-unknown/release/libhsharp_wasm_runtime.a
+-> link   => static
+-> target => h#
 
 [lib]
 -> output => hlib
 
 [pack]
--> contents    => [hlib, a, sources, docs]
+-> contents    => [sources, docs]
 -> compression => zstd
--> files       => [glue/hsharp-web-loader.js]
+-> files       => [emscripten/hsharp-web.js, emscripten/web_bridge.cpp, scripts/gen-emscripten-bridge.py]
 
 [dependencies]
