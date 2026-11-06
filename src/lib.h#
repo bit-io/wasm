@@ -1,1 +1,12 @@
+mod web_types
+mod web_console
+mod web_dom
+mod web_events
+mod web_timers
+mod web_storage
+mod web_fetch
+mod web_canvas
+mod web_random
+mod web_time
 
+pub let VERSION: string = "0.2.0"
