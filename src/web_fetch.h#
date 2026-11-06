@@ -1,4 +1,4 @@
-use "web-wasm -> web_types" from "types"
+mod web_types
 
 extern static [rust] is
     fn hweb_fetch_get(url: string) -> int
@@ -27,17 +27,17 @@ pub fn status(request_id: int) -> int is
     return hweb_fetch_status(request_id)
 end
 
-;; Pomocnicza funkcja do budowania `types::Response` wewnątrz
+;; Pomocnicza funkcja do budowania `web_types::Response` wewnątrz
 ;; `wasm_on_event`, gdy masz już `kind`/`num`/`text` pod ręką:
 ;;
 ;;     if kind == events::KIND_FETCH_OK is
-;;         let r: types::Response = fetch::response_ok(id, text)
+;;         let r: web_types::Response = fetch::response_ok(id, text)
 ;;         ...
 ;;     end
-pub fn response_ok(request_id: int, body: string) -> types::Response is
-    return types::Response { ok: true, status: hweb_fetch_status(request_id), body: body }
+pub fn response_ok(request_id: int, body: string) -> web_types::Response is
+    return web_types::Response { ok: true, status: hweb_fetch_status(request_id), body: body }
 end
 
-pub fn response_err(request_id: int, error_text: string) -> types::Response is
-    return types::Response { ok: false, status: hweb_fetch_status(request_id), body: error_text }
+pub fn response_err(request_id: int, error_text: string) -> web_types::Response is
+    return web_types::Response { ok: false, status: hweb_fetch_status(request_id), body: error_text }
 end
