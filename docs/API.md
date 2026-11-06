@@ -12,69 +12,53 @@
    nie zmieniamy istniejącej sygnatury w MINOR/PATCH — najwyżej oznaczamy
    ją jako przestarzałą w komentarzu i utrzymujemy dalej.
 3. Wartości liczbowe `KIND_*` (`web_events.h#`) są częścią zamrożonego
-   ABI między H# a `glue/hsharp-web-loader.js` — traktowane jak MAJOR.
-4. Nazwy eksportów wasm, których oczekuje loader (`main`, `wasm_on_event`,
-   `hsharp_web_alloc`, `hsharp_runtime_install_panic_hook`, `memory`) są
+   ABI między H# a `emscripten/hsharp-web.js` — traktowane jak MAJOR.
+4. Nazwy eksportów wasm używane przez `emscripten/hsharp-web.js` (`main`, `hsharp_web_event`,
+   `hsharp_web_alloc`, `hsharp_web_free`, `hsharp_web_retbuf`) oraz sygnatura `wasm_on_event` są
    również częścią zamrożonego ABI.
 5. Każda zmiana łamiąca którykolwiek z powyższych punktów trafia do
    `CHANGELOG.md` z jawnym nagłówkiem „BREAKING”.
 
-## Kontrakt ABI (dlaczego to działa i gdzie leży ryzyko)
+## Kontrakt ABI (jak program łączy się z przeglądarką)
 
-`web-wasm` jest w 100% czystym H# po stronie API. Jedyny "nie-H#"
-fragment to `runtime-rust/` — i to nie z wyboru stylistycznego, tylko dlatego,
-że `hsharp compile --target wasm32` **zawsze** zostawia każde wywołanie
-runtime'u H# (`hsh_*`) jako nierozwiązany symbol (patrz README.md,
-sekcja „Dlaczego potrzebny jest `runtime-rust/`”) — dotyczy to KAŻDEGO
-programu H# kompilowanego na wasm32, nawet `write("Hello")`, niezależnie
-od tego czy w ogóle korzysta z tej biblioteki webowej.
+Kompilator H# tłumaczy każde `fn hweb_x(...)` z bloku `extern static [rust]` na deklarację
+`extern "C" <ret> hx_x(<args>) __asm__("hweb_x");` — typy po stronie C są ustalone przez kompilator
+(`cg::c_abi_ty`), potwierdzone na wygenerowanym C++:
 
-Konwencje przyjęte przy pisaniu `runtime-rust/` (potwierdzone bezpośrednio
-w źródłach kompilatora: `compiler/runtime/core.c` i
-`compiler/src/ffi_rust_native.rs`):
+| typ H#     | typ C                |
+|------------|----------------------|
+| `int`      | `int64_t`            |
+| `bool`     | `int8_t`             |
+| `f64`/`f32`| `double`/`float`     |
+| `string`   | `const char*` (UTF-8, zakończony zerem) |
 
-| H# typ     | Reprezentacja przy `extern static [rust]`                     |
-|------------|-----------------------------------------------------------------|
-| `string`   | wskaźnik do C-stringa zakończonego zerem (`hsh_string`/`*const c_char`) — potwierdzone zarówno w `core.c`, jak i w generatorze shimów |
-| `int`      | `i64` (H#'owy `int` jest 64-bitowy)                              |
-| `bool`     | `i64` (0/1) — zgodnie z tym, jak `core.c` reprezentuje dziś wyniki logiczne (`hsh_str_contains` itd. zwracają `int64_t`, nie `int8_t`) |
-| `f32`/`f64`| natywny `f32`/`f64`                                              |
+`emscripten/web_bridge.cpp` (generowany przez `scripts/gen-emscripten-bridge.py`) definiuje wszystkie
+`hweb_*` dokładnie tymi typami. Do JS liczby przechodzą jako `double` (bez BigInt, działa na każdej
+wersji emscripten), napisy jako wskaźniki. Napis zwracany z JS trafia do jednego, współdzielonego bufora
+(`hsharp_web_retbuf`) — opakowanie wygenerowane przez kompilator kopiuje go od razu.
 
-**Uczciwie o ryzyku**: ta biblioteka została napisana i przejrzana wobec
-źródeł kompilatora H#, ale nie została skompilowana i uruchomiona w tym
-środowisku (brak LLVM 21 + pełnego toolchainu H# w tej sesji). Zanim
-wejdziesz z tym na produkcję:
+Punkt wejścia zdarzeń: `hsharp_web_event(kind, id, num, text)` (eksportowany z wasm, wołany z JS)
+wywołuje Twoje `pub fn wasm_on_event(kind: int, id: int, num: f64, text: string)`; gdy go nie ma,
+zdarzenia są ignorowane (słabe odwołanie).
 
-1. Zbuduj mały testowy `.h#` z jedną deklaracją `extern static [rust]`
-   (np. `fn hweb_console_log(msg: string)`), skompiluj z
-   `--target wasm32 --emit object`, i porównaj oczekiwaną sygnaturę importu
-   przez `wasm-objdump -x app.o` (lub `wasm2wat`) z tym, co deklaruje
-   `runtime-rust/src/web_bridge.rs`. Jeśli się różnią (np. `bool` faktycznie
-   ląduje jako `i32`, nie `i64`) — popraw tylko typ w Rust (nazwy i logika
-   zostają takie same), zbuduj ponownie `cargo build --target
-   wasm32-unknown-unknown`, i wpisz różnicę do `CHANGELOG.md`.
-2. To samo dla `hsh_*` w `core_runtime.rs` — porównaj z symbolami
-   nierozwiązanymi w `.o` (`wasm-objdump -x app.o | grep hsh_`).
-
-Ten rozdział jest tu świadomie, a nie w README, właśnie dlatego, że
-"ogromna stabilność API" oznacza też: mówimy wprost, gdzie leży
-niepewność, zamiast obiecywać coś, czego nie mogliśmy tu zweryfikować
-uruchomieniowo.
+Po zmianie jakiejkolwiek deklaracji `fn hweb_*` w `src/` uruchom
+`python3 scripts/gen-emscripten-bridge.py` — skrypt odświeży `web_bridge.cpp` i zgłosi błąd, jeśli
+któraś funkcja nie ma odpowiednika `hsharp_js_*` w `emscripten/hsharp-web.js`.
 
 ## Moduły
 
-| Moduł            | Import                                              | Zakres |
+| Moduł            | Użycie (po `use "bit -> wasm" from "wasm"`)                                              | Zakres |
 |-------------------|-----------------------------------------------------|--------|
-| `web_console`      | `use "web-wasm -> web_console" from "console"`      | `console.*` |
-| `web_dom`          | `use "web-wasm -> web_dom" from "dom"`              | DOM: `Element`, tworzenie/usuwanie, atrybuty, klasy, style, `value` |
-| `web_events`       | `use "web-wasm -> web_events" from "events"`        | `listen`/`unlisten`, stałe `KIND_*`, punkt wejścia `wasm_on_event` |
-| `web_timers`       | `use "web-wasm -> web_timers" from "timers"`        | `setTimeout`/`setInterval`/`requestAnimationFrame` |
-| `web_storage`      | `use "web-wasm -> web_storage" from "storage"`      | `localStorage`/`sessionStorage` |
-| `web_fetch`        | `use "web-wasm -> web_fetch" from "fetch"`          | `fetch()` (GET/POST), asynchronicznie przez `wasm_on_event` |
-| `web_canvas`       | `use "web-wasm -> web_canvas" from "canvas"`        | Canvas 2D — prostokąty, ścieżki, tekst |
-| `web_random`       | `use "web-wasm -> web_random" from "random"`        | `crypto.getRandomValues`-backed losowość |
-| `web_time`         | `use "web-wasm -> web_time" from "time"`            | `Date.now()` / `performance.now()` (zamiennik `std -> time` na wasm32) |
-| `web_types`        | `use "web-wasm -> web_types" from "types"`          | `Response` używany przez `web_fetch` |
+| `web_console`      | `wasm::web_console`      | `console.*` |
+| `web_dom`          | `wasm::web_dom`              | DOM: `Element`, tworzenie/usuwanie, atrybuty, klasy, style, `value` |
+| `web_events`       | `wasm::web_events`        | `listen`/`unlisten`, stałe `KIND_*`, punkt wejścia `wasm_on_event` |
+| `web_timers`       | `wasm::web_timers`        | `setTimeout`/`setInterval`/`requestAnimationFrame` |
+| `web_storage`      | `wasm::web_storage`      | `localStorage`/`sessionStorage` |
+| `web_fetch`        | `wasm::web_fetch`          | `fetch()` (GET/POST), asynchronicznie przez `wasm_on_event` |
+| `web_canvas`       | `wasm::web_canvas`        | Canvas 2D — prostokąty, ścieżki, tekst |
+| `web_random`       | `wasm::web_random`        | `crypto.getRandomValues`-backed losowość |
+| `web_time`         | `wasm::web_time`            | `Date.now()` / `performance.now()` (zamiennik `std -> time` na wasm32) |
+| `web_types`        | `wasm::web_types`          | `Response` używany przez `web_fetch` |
 
 Pełne sygnatury — patrz nagłówki poszczególnych plików `src/*.h#`, każdy
 jest w pełni udokumentowany komentarzami i celowo krótki (jeden plik =
@@ -111,10 +95,8 @@ zwykłej zmiennej modułu. Dwa poprawne miejsca na taki stan:
 
 `fs::`, `proc::`, `env::`, `net_tcp`/`net_udp`, `sqlite`, `python`,
 `crypto_rsa` (OpenSSL) — wszystko to, co w `std` zależy od POSIX/systemu
-plików/procesów. Program H# kompilowany na `--target wasm32`, który tego
-użyje, dostanie błąd linkowania (undefined symbol) — to zamierzone
-zachowanie samego kompilatora (patrz jego `TargetTriple::wasm32()`/
-`WasmIncompatible`), nie ograniczenie tej biblioteki. `web_random` i
+plików/procesów. W przeglądarce ich po prostu nie ma — to ograniczenie platformy,
+nie tej biblioteki (w node część z nich działa dzięki libc Emscripten). `web_random` i
 `web_time` istnieją właśnie jako w pełni funkcjonalne, webowe zamienniki
 dla tych dwóch akurat przypadków, gdzie użytkownik najczęściej i tak
 sięgnąłby po `std`.
